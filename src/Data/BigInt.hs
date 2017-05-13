@@ -1,45 +1,36 @@
 {-# LANGUAGE KindSignatures #-}
 {-# LANGUAGE MagicHash #-}
 {-# LANGUAGE UnboxedTuples #-}
+{-# LANGUAGE DataKinds #-}
+{-# LANGUAGE TypeFamilies #-}
+{-# LANGUAGE TypeFamilyDependencies #-}
+{-# LANGUAGE MultiParamTypeClasses #-}
+{-# LANGUAGE FlexibleInstances #-}
+{-# LANGUAGE FlexibleContexts #-}
 module Data.BigInt
   (
 
   ) where
 
 import GHC.Prim
+import GHC.Types
 
-data BigKey lowHalf# highHalf# = BigKey# (# lowHalf#, highHalf# #)
+type BigWord# (lowHalf# :: TYPE 'UnboxedTupleRep) (highHalf# :: TYPE 'UnboxedTupleRep) = (# lowHalf#, highHalf# #)
 
-class Num# a# where
-  (+#) :: a# -> a# -> a#
-  (-#) :: a# -> a# -> a#
-  (*#) :: a# -> a# -> a#
+class WordArith# (a# :: TYPE 'UnboxedTupleRep) where
+  add# :: a# -> a# -> a#
 
-  negate# :: a# -> a#
-  abs# :: a# -> a#
-  signum# :: a# -> a#
+class BigWordArith# (b# :: TYPE 'UnboxedTupleRep) (a# :: TYPE 'UnboxedTupleRep) where
+  overAdd# :: a# -> a# -> (# a#, b# #)
 
-  fromInteger# :: Integer -> a#
+instance BigWordArith# (# Word# #) (# Word# #) where
+  overAdd# (# x# #) (# y# #) = (# (# sl# #), (# sh# #) #)
+    where (# sh#, sl# #) = plusWord2# x# y#
 
-instance Num# Word# where
-  (+#) = plusWord#
-  (-#) = minusWord#
-  (*#) = timesWord#
-
-  negate# = narrow8Word# . int2Word# . negateInt# . word2Int# 
-  abs# = id
-  signum# = id#
-
-  fromInteger# = undefined
-
---instance Num# Word32# where
---
---instance Num# Word64# where
-
--- instance 
---   (
---     Num# lowHalf#, 
---     Num# highHalf#
---   ) =>  
---   Num# (BigKey lowHalf# highHalf#) where
-
+instance (BigWordArith# (# ah# #) (# al# #), BigWordArith# (# b# #) (# ah# #), WordArith# (# b# #)) => BigWordArith# (# b# #) (BigWord# (# al# #) (# ah# #)) where
+  overAdd# (# xl#, xh# #) (# yl#, yh# #) = (# (# zl#, zh# #), w# #)
+    where
+      (# zl#, zh0# #) = overAdd# xl# yl#
+      (# zh1#, w0# #) = overAdd# xh# yh#
+      (# zh#, w1# #) = overAdd# zh0# zh1#
+      w# = add# w0# w1#
