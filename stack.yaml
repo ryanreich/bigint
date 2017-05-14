@@ -15,6 +15,8 @@
 # resolver:
 #  name: custom-snapshot
 #  location: "./custom-snapshot.yaml"
+system-ghc: true
+compiler: ghc-8.2.0.20170505
 resolver: nightly-2017-04-06
 
 # User packages to be built.
