@@ -7,26 +7,35 @@
 {-# LANGUAGE UnboxedTuples #-}
 module Data.BigWordClass
   (
-    LowHigh(..), WordArith(..)
+    LowHigh(..), Semiring(..)
   ) where
+
+import Data.Bits
 
 import GHC.Prim
 import GHC.Types
 
 -- | @DoubleWord a ~ (a, a)@
 class LowHigh a where
+  -- | Must be a data and not a type so that we can define instances
   data DoubleWord a
   low :: DoubleWord a -> a
   high :: DoubleWord a -> a
   makeLowHigh :: a -> a -> DoubleWord a
 
 -- | A subset of the `Num` operations
-class WordArith a where
+class Semiring a where
+  zero :: a
+  -- | This is actually a fancy version of the unit 1, since the
+  -- characteristic function is just integers interpreted as multiples of
+  -- 1.
+  char :: Integer -> (a, Integer)
+
   add :: a -> a -> a
   mul :: a -> a -> a
 
 -- | Arithmetic with carrying
-class (WordArith a, LowHigh a) => BigWordArith a where
+class (Semiring a, LowHigh a) => BigWordArith a where
   extend :: a -> DoubleWord a
   shiftExtend :: a -> DoubleWord a
   overAdd :: a -> a -> DoubleWord a
@@ -38,7 +47,11 @@ instance LowHigh Word where
   high (BigWord1 _ x) = x
   makeLowHigh = BigWord1
 
-instance WordArith Word where
+instance Semiring Word where
+  zero = 0
+  char n = (x, n `shiftR` finiteBitSize x)
+    where x = fromInteger n
+
   add = (+)
   mul = (*)
 
@@ -50,14 +63,20 @@ instance BigWordArith Word where
   overMul !(W# x#) !(W# y#) = makeLowHigh (W# zl#) (W# zh#)
     where (# zh#, zl# #) = timesWord2# x# y#
 
-instance (BigWordArith a, LowHigh (DoubleWord a)) => WordArith (DoubleWord a) where
+instance (BigWordArith a, LowHigh (DoubleWord a)) => Semiring (DoubleWord a) where
+  zero = extend zero
+  char n = (makeLowHigh nl nh, m)
+    where
+      (nl, m0) = char n
+      (nh, m) = char m0
+
   add x y = low $ overAdd x y
   mul x y = low $ overMul x y
 
 instance (BigWordArith a, LowHigh (DoubleWord a)) => BigWordArith (DoubleWord a) where
-  extend x = makeLowHigh x $ zero2 $ low x
+  extend x = makeLowHigh x zero
 
-  shiftExtend x = flip makeLowHigh x $ zero2 $ low x
+  shiftExtend x = makeLowHigh zero x
 
   overAdd x y = makeLowHigh (makeLowHigh zl zh) (extend w)
     where
@@ -81,10 +100,4 @@ instance (BigWordArith a, LowHigh (DoubleWord a)) => BigWordArith (DoubleWord a)
       zh0 = add mhh mmidh
       zl = low zl0
       zh = add (high zl0) zh0
-
-zero :: (BigWordArith a, LowHigh a) => a -> a
-zero = high . extend
-
-zero2 :: (BigWordArith a, LowHigh a) => a -> DoubleWord a
-zero2 = extend . zero
 
