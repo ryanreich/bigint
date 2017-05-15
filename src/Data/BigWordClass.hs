@@ -7,7 +7,7 @@
 {-# LANGUAGE UnboxedTuples #-}
 module Data.BigWordClass
   (
-    LowHigh(..), Semiring(..)
+    LowHigh(..)
   ) where
 
 import Data.Bits
@@ -40,6 +40,14 @@ class (Semiring a, LowHigh a) => BigWordArith a where
   shiftExtend :: a -> DoubleWord a
   overAdd :: a -> a -> DoubleWord a
   overMul :: a -> a -> DoubleWord a
+
+instance {-# OVERLAPPABLE #-} (Semiring a) => Num a where
+  (+) = add
+  (*) = mul
+  negate = (*) (-1)
+  abs = id
+  signum = const 1
+  fromInteger = fst . char
 
 instance LowHigh Word where
   data DoubleWord Word = BigWord1 {-# UNPACK #-}!Word {-# UNPACK #-}!Word
