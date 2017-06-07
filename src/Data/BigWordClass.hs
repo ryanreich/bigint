@@ -38,9 +38,9 @@ class Semiring a where
   mul :: a -> a -> a
 
 -- | Arithmetic with carrying
-class (Semiring a, LowHigh a) => BigWordArith a where
-  overAdd :: a -> a -> DoubleWord a
-  overMul :: a -> a -> DoubleWord a
+class (Semiring a) => BigWordArith a where
+  overAdd :: a -> a -> (a, Bool)
+  overMul :: a -> a -> (a, a)
 
 instance {-# OVERLAPPABLE #-} (Semiring a) => Num a where
   (+) = add
@@ -66,9 +66,8 @@ instance Semiring Word where
   mul = (*)
 
 instance BigWordArith Word where
-  overAdd !(W# x#) !(W# y#) = makeLowHigh (W# zl#) (W# zh#)
-    where (# zh#, zl# #) = plusWord2# x# y#
-  overMul !(W# x#) !(W# y#) = makeLowHigh (W# zl#) (W# zh#)
+  overAdd x y = (x + y, x + y < x)
+  overMul !(W# x#) !(W# y#) = (W# zl#, W# zh#)
     where (# zh#, zl# #) = timesWord2# x# y#
 
 instance (LowHigh a, Eq a) => Eq (DoubleWord a) where
@@ -77,7 +76,7 @@ instance (LowHigh a, Eq a) => Eq (DoubleWord a) where
 instance (LowHigh a, Ord a) => Ord (DoubleWord a) where
   compare x y = comparing high x y <> comparing low x y
 
-instance (Ord a, Semiring a, LowHigh a, LowHigh (DoubleWord a)) => Semiring (DoubleWord a) where
+instance (LowHigh a, BigWordArith a) => Semiring (DoubleWord a) where
   zero = extend zero
   one = extend 1
   char n = (makeLowHigh nl nh, m)
@@ -85,12 +84,18 @@ instance (Ord a, Semiring a, LowHigh a, LowHigh (DoubleWord a)) => Semiring (Dou
       (nl, m0) = char n
       (nh, m) = char m0
 
-  add x y = fst $ lazyOverAdd x y
-  mul x y = low $ overMul x y
+  add x y = fst $ overAdd x y
+  mul x y = fst $ overMul x y
 
-instance (Ord a, Semiring a, LowHigh a, LowHigh (DoubleWord a)) => BigWordArith (DoubleWord a) where
-  overAdd x y = makeLowHigh z (if c then one else zero)
-    where (z, c) = lazyOverAdd x y
+instance (LowHigh a, BigWordArith a) => BigWordArith (DoubleWord a) where
+  overAdd x y = (makeLowHigh zl zh, carry)
+    where
+      (zl, cl) = overAdd (low x) (low y)
+      (zh0, ch0) = overAdd (high x) (high y)
+      (zh, ch)
+        | cl = overAdd one zh0
+        | otherwise = (zh0, False)
+      carry = ch || ch0
 
   overMul = undefined
 --  overMul x y = makeLowHigh zl zh
@@ -112,15 +117,4 @@ extend = flip makeLowHigh zero
 
 shiftExtend :: (LowHigh a, Semiring a) => a -> DoubleWord a
 shiftExtend = makeLowHigh zero
-
-{-# INLINE lazyOverAdd #-}
-lazyOverAdd :: 
-  (Ord a, Semiring a, LowHigh a) => 
-  DoubleWord a -> DoubleWord a -> (DoubleWord a, Bool)
-lazyOverAdd x y = (makeLowHigh zl zh, carry)
-  where
-    zl = add (low x) (low y)
-    zh0 = add (high x) (high y)
-    zh = (if zl < low x then add one else id) zh0
-    carry = zh < zh0 || zh0 < high x
 
