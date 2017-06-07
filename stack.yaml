@@ -16,8 +16,10 @@
 #  name: custom-snapshot
 #  location: "./custom-snapshot.yaml"
 system-ghc: true
-compiler: ghc-8.2.0.20170505
-resolver: nightly-2017-04-06
+compiler: ghc-8.3.20170601
+resolver: lts-8.17 #nightly-2017-06-01
+
+allow-newer: true
 
 # User packages to be built.
 # Various formats can be used as shown in the example below.
@@ -39,6 +41,11 @@ resolver: nightly-2017-04-06
 # will not be run. This is useful for tweaking upstream packages.
 packages:
 - '.'
+- extra-dep: true
+  location:
+    git: https://github.com/haskell/deepseq
+    commit: 0b22c9825ef79c1ee41d2f19e7c997f5cdc93494
+
 # Dependency packages to be pulled from upstream that are not in the resolver
 # (e.g., acme-missiles-0.3)
 extra-deps: []

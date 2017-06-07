@@ -3,8 +3,12 @@
 {-# LANGUAGE TypeFamilies #-}
 {-# LANGUAGE FlexibleInstances #-}
 {-# LANGUAGE FlexibleContexts #-}
-module Data.BigWord where
+module Data.BigWord 
+  (
+    module Data.BigWordUnpack,
+    module Data.BigWord
+  ) where
 
 import Data.BigWordUnpack
 
-makeBigWordsTo 3
+makeBigWordsTo 5

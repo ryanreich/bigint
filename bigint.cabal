@@ -35,14 +35,17 @@ library
 --                      , bigint
 --   default-language:    Haskell2010
 -- 
--- test-suite bigint-test
---   type:                exitcode-stdio-1.0
---   hs-source-dirs:      test
---   main-is:             Spec.hs
---   build-depends:       base
---                      , bigint
---   ghc-options:         -threaded -rtsopts -with-rtsopts=-N
---   default-language:    Haskell2010
+
+test-suite bigint-performance
+  type:                exitcode-stdio-1.0
+  hs-source-dirs:      test
+  main-is:             DumbPerformance.hs
+  build-depends:       
+    base,
+    bigint,
+    time
+  ghc-options:         -threaded -rtsopts -with-rtsopts=-N
+  default-language:    Haskell2010
 
 source-repository head
   type:     git
