@@ -18,13 +18,12 @@ library
   hs-source-dirs:      src
   exposed-modules:     
     Data.BigWord
-  other-modules:
-    Data.BigWordClass,
-    Data.BigWordUnpack
   build-depends:       
     base >= 4.7 && < 5,
     ghc-prim,
     template-haskell
+  ghc-options:
+    -fllvm
   default-language:    Haskell2010
 
 -- executable bigint-exe
@@ -36,7 +35,7 @@ library
 --   default-language:    Haskell2010
 -- 
 
-test-suite bigint-performance
+benchmark bigint-performance
   type:                exitcode-stdio-1.0
   hs-source-dirs:      test
   main-is:             DumbPerformance.hs
@@ -44,7 +43,20 @@ test-suite bigint-performance
     base,
     bigint,
     time
-  ghc-options:         -threaded -rtsopts -with-rtsopts=-N
+  ghc-options:         -threaded -rtsopts -with-rtsopts=-N -fllvm
+  default-language:    Haskell2010
+
+benchmark bigint-badtest
+  buildable: False
+  type:                exitcode-stdio-1.0
+  hs-source-dirs:      test
+  main-is:             BadPerformanceExample.hs
+  build-depends:       
+    base,
+    bigint,
+    time,
+    ghc-prim
+  ghc-options:         -threaded -rtsopts -with-rtsopts=-N -fllvm
   default-language:    Haskell2010
 
 source-repository head
