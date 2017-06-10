@@ -176,7 +176,7 @@ type BigWord4 = DoubleWord BigWord3
 newtype BoxedBigWord a = BoxedBigWord { getBoxedBigWord :: a }
   deriving (BigWordArith, Semiring)
 
-data instance DoubleWord (BoxedBigWord a) = DoubleWord a a
+data instance DoubleWord (BoxedBigWord a) = DoubleWord !a !a
 instance LowHigh (BoxedBigWord a) where
   high (DoubleWord _ x) = BoxedBigWord x
   low  (DoubleWord x _) = BoxedBigWord x
