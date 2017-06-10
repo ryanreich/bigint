@@ -45,6 +45,10 @@ packages:
   location:
     git: https://github.com/haskell/deepseq
     commit: 0b22c9825ef79c1ee41d2f19e7c997f5cdc93494
+- extra-dep: true
+  location:
+    git: https://github.com/dreixel/syb
+    commit: f584ecd525179778063df2eb02dc6bbe406d7e75
 
 # Dependency packages to be pulled from upstream that are not in the resolver
 # (e.g., acme-missiles-0.3)
